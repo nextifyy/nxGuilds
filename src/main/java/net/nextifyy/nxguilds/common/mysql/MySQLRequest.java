@@ -2,23 +2,23 @@ package net.nextifyy.nxguilds.common.mysql;
 
 import net.nextifyy.nxguilds.common.GuildsObject;
 
-public class MySQLQuery {
+public class MySQLRequest {
 
-    private MySQLQueryType queryType;
+    private MySQLRequestType queryType;
     private GuildsObject object;
     private boolean important;
 
-    public MySQLQuery(MySQLQueryType queryType, GuildsObject object, boolean important) {
+    public MySQLRequest(MySQLRequestType queryType, GuildsObject object, boolean important) {
         this.queryType = queryType;
         this.object = object;
         this.important = important;
     }
 
-    public MySQLQueryType getQueryType() {
+    public MySQLRequestType getQueryType() {
         return queryType;
     }
 
-    public void setQueryType(MySQLQueryType queryType) {
+    public void setQueryType(MySQLRequestType queryType) {
         this.queryType = queryType;
     }
 

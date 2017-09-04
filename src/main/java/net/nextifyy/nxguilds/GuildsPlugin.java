@@ -27,5 +27,4 @@ public class GuildsPlugin extends JavaPlugin {
         this.guildPlayersManager = null;
     }
 
-
 }

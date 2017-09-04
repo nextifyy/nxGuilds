@@ -9,6 +9,8 @@ import java.util.List;
 public class Guild implements GuildsObject {
 
     private int id;
+    private GuildPlayer leader;
+    private GuildPlayer vLeader;
     private String name;
     private String tag;
     private String description;
@@ -155,5 +157,21 @@ public class Guild implements GuildsObject {
 
     public void deleteMe() {
 
+    }
+
+    public GuildPlayer getLeader() {
+        return leader;
+    }
+
+    public void setLeader(GuildPlayer leader) {
+        this.leader = leader;
+    }
+
+    public GuildPlayer getvLeader() {
+        return vLeader;
+    }
+
+    public void setvLeader(GuildPlayer vLeader) {
+        this.vLeader = vLeader;
     }
 }

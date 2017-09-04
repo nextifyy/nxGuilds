@@ -1,6 +1,6 @@
 package net.nextifyy.nxguilds.common.mysql;
 
-public enum MySQLQueryType {
+public enum MySQLRequestType {
 
     INSERT, UPDATE, DELETE
 
