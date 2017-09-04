@@ -10,10 +10,7 @@ import org.bukkit.Location;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,27 +53,15 @@ public class MySQLManager {
         return statement;
     }
 
-    public void sendRequests() throws SQLException {
-        for (MySQLRequest request : toSend) {
-            if (request.getQueryType() == MySQLRequestType.INSERT) {
-                if (request.getObject() instanceof Guild) {
-//                    Map<String, Object> map = generateColumnsAndValues(request.getObject());
-
-                } else if (request.getObject() instanceof GuildPlayer) {
-
-                }
-            } else if (request.getQueryType() == MySQLRequestType.UPDATE) {
-                if (request.getObject() instanceof Guild) {
-
-                } else if (request.getObject() instanceof GuildPlayer) {
-
-                }
-            } else if (request.getQueryType() == MySQLRequestType.DELETE) {
-                if (request.getObject() instanceof Guild) {
-                    getStatement().executeUpdate("DELETE * FROM `" + this.plugin.configManager.mysqlTablePrefix + "guilds` WHERE id='" + ((Guild) request.getObject()).getId() + "'");
-                } else if (request.getObject() instanceof GuildPlayer) {
-                    getStatement().executeUpdate("DELETE * FROM `" + this.plugin.configManager.mysqlTablePrefix + "players` WHERE id='" + ((GuildPlayer) request.getObject()).getId() + "'");
-                }
+    public void sendRequest(MySQLRequest request) throws SQLException {
+        if (!(request.getQueryType() == MySQLRequestType.DELETE)) {
+            String table = (request.getObject() instanceof Guild) ? "players" : "guilds";
+            getStatement().executeUpdate(generateRequestFromMap(generateColumnsAndValues(request.getObject()), request.getQueryType(), this.plugin.configManager.mysqlTablePrefix + table));
+        } else {
+            if (request.getObject() instanceof Guild) {
+                getStatement().executeUpdate("DELETE * FROM `" + this.plugin.configManager.mysqlTablePrefix + "guilds` WHERE id='" + ((Guild) request.getObject()).getId() + "'");
+            } else if (request.getObject() instanceof GuildPlayer) {
+                getStatement().executeUpdate("DELETE * FROM `" + this.plugin.configManager.mysqlTablePrefix + "players` WHERE id='" + ((GuildPlayer) request.getObject()).getId() + "'");
             }
         }
     }
@@ -100,6 +85,7 @@ public class MySQLManager {
     public String generateRequestFromMap(Map<String, Object> map, MySQLRequestType type, String table) {
         StringBuilder sb = new StringBuilder();
         if (type == MySQLRequestType.INSERT) {
+            map.remove("id");
             sb.append("INSERT INTO ");
             sb.append(table);
             sb.append("(");
@@ -108,7 +94,7 @@ public class MySQLManager {
             sb.append(" VALUES (");
             for (Object o : map.values()) {
                 if (o instanceof GuildPlayer) {
-                    sb.append("'" + ((GuildPlayer) o).getId() + "'");
+                    sb.append("'" + ((GuildPlayer) o).getId() + "', ");
                 } else if (o instanceof List) {
                     StringBuilder sb1 = new StringBuilder();
                     for (Object ol : (List) o) {
@@ -120,12 +106,15 @@ public class MySQLManager {
                             sb1.append(ol + ", ");
                         }
                     }
-                    sb.deleteCharAt(sb.length() - 2);
-                    sb.append("'" + sb1.toString() + "'");
+                    sb1.setLength(sb1.length() - 2);
+                    sb.append("'" + sb1.toString() + "', ");
                 } else if (o instanceof Location) {
-                    sb.append("'" + ((Location) o).getBlockX() + ";" + ((Location) o).getBlockY() + ";" + ((Location) o).getBlockZ() + "'");
+                    sb.append("'" + ((Location) o).getBlockX() + ";" + ((Location) o).getBlockY() + ";" + ((Location) o).getBlockZ() + "', ");
+                } else {
+                    sb.append("'" + o + "', ");
                 }
             }
+            sb.setLength(sb.length() - 2);
             sb.append(")");
             return sb.toString().replaceAll("\\[", "").replaceAll("\\]", "");
         } else if (type == MySQLRequestType.UPDATE) {
@@ -147,9 +136,25 @@ public class MySQLManager {
         return null;
     }
 
-
-
-
-
+    public List<GuildsObject> loadGuildClassByFields(GuildsObject object) throws SQLException, IllegalAccessException {
+        List<GuildsObject> objects = new ArrayList<GuildsObject>();
+        Connection connection = getConnection();
+        String table = (object instanceof Guild) ? "players" : "guilds";
+        PreparedStatement ps = connection.prepareStatement("SELECT * FROM `" + this.plugin.configManager.mysqlTablePrefix + table);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            Field[] fields = object.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (Modifier.isPrivate(field.getModifiers())) {
+                    while (rs.next()) {
+                        field.setAccessible(true);
+                        field.set(object.getClass(), rs.getObject(field.getName()));
+                    }
+                }
+            }
+            objects.add(object);
+        }
+        return objects;
+    }
 
 }
